@@ -3,16 +3,21 @@
 'use strict';
 
 var preHandlers = {
-	'pre': function(data, args) {
-		if ( args && args.hasOwnProperty('content') ) {
-			return getObjectValue(args.content, data);
+	'content': function(data, args) {
+		if ( args && args.hasOwnProperty('key') ) {
+			return getObjectValue(args.key, data);
 		}
 		throw new Error("Pre tag requires a valid attribute.");
 	}
 };
 
 function getObjectValue(str, obj) {
-	return str.split('.').reduce(function(o, i){return o[i];}, obj);
+	try {
+		return str.split('.').reduce(function(o, i){return o[i];}, obj);
+	}
+	catch (e) {
+		return str;
+	}
 }
 
 // THIS NEEDS TO BE UNIT TESTABLE
@@ -160,7 +165,7 @@ function parser(block, data) {
 exports = module.exports = {
 	parse: function (str, data, callback) {
 		var err, i, matches,
-			preSearch = /{@([^}]*)?\/}/gi;
+			preSearch = /{@([^}]*)?\/?}/gi;
 
 		matches = str.match(preSearch);
 		try {
