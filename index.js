@@ -1,181 +1,242 @@
-/*global exports:true*/
-
 'use strict';
 
-var preHandlers = {
-	'content': function(data, args) {
+var tatersalad = require('tatersalad'),
+	async = require('async');
+/*
+	TODO: Come up with a short "spec" of what I'm doing here and how it's getting tokenized and parsed.
+*/
+
+/*
+	Takes in a string (dot.style.object.path) and a javascript object
+	e.g. {dot:{style:{object:{path:"value"}}}}
+	And returns the value or "value" in this example
+*/
+function getObjectValue(str, obj) {
+	return str.split('.').reduce( function(o, i) {
+		return (o) ? o[i] : null;
+	}, obj);
+}
+
+
+/*
+	A list of types used to handle @pre prebuilding
+	Could potentially handle images, urls, and whatever else
+	TODO: Should use tatersalad to look up unknown keys
+*/
+var preHandlerTypes = {
+	'content': function(data, args, callback) {
+		var result, root;
 		if ( args && args.hasOwnProperty('key') ) {
-			return getObjectValue(args.key, data);
+			result = getObjectValue(args.key, data);
+			if ( result === null ) {
+				root = args.key.split('.')[0];
+				tatersalad.loadContent(root, function(err, content) {
+					callback(err, getObjectValue(args.key, content));
+				});
+			}
+			else {
+				callback(null, result);
+			}
+		} else {
+			throw new Error("@pre with type=\"content\" requires the key attribute");
 		}
-		throw new Error("Pre tag requires a valid attribute.");
 	}
 };
 
-function getObjectValue(str, obj) {
-	try {
-		return str.split('.').reduce(function(o, i){return o[i];}, obj);
-	}
-	catch (e) {
-		return str;
-	}
-}
+/*
+	A tokenizing parser
+	Walks each character looking for expected patterns
+	TODO: Improve unit testing
+*/
+var parser = {
+	adv: function(p) {
+		p.pos++;
+	},
 
-// THIS NEEDS TO BE UNIT TESTABLE
-// Guess I'll have to break it out of the top-level method next week
-function parser(block, data) {
-	var pos = 0, tag, attr={}, result;
+	/*
+		Basic loop to walk over the entire string and look for
+		valid @pre blocks
+	*/
+	run: function(str, data, callback) {
+		var p = {pos: 0, str: str, data: data},
+			result = [];
 
-	function adv() {
-		pos++;
-	}
+		async.doWhilst(
+			function(cb) {
+				parser.parseBlock(p, function(err, content) {
+					if ( err ) {
+						callback(err, str);
+					}
+					result.push(content);
+					cb();
+				});
+			},
+			function() { return p.pos < p.str.length; },
+			function(err) {
+				callback(err, result.join(''));
+			}
+		);
+	},
 
 	/*
 		Parses a string of dust template in an attempt to find any supported
-		"pre" tags for precompilation. Looks for syntax like {@helper attr="value"/}
+		"pre" tags for precompilation. Looks for syntax like {@pre type="content" key="index.header"/}
 		to match our current helper syntax.
 	*/
-	function parseBlock() {
-		var result;
+	parseBlock: function(p, callback) {
+		var attrTemp = '',
+			tagTemp = '',
+			attr = {},
+			tag = '',
+			tagName = 'pre';
 		// Ignore the open brace
-		if ( block[pos] === '{' ) {
-			adv();
-		}
-		// We have an @! There must be a tag, right?
-		if ( block[pos] === '@' ) {
-			adv();
-			// Look for a valid tag
-			tag = parseTag();
-			if ( tag !== null ) {
-				// If we don't have a handler for this tag, return the original string
-				if ( !preHandlers.hasOwnProperty(tag) ) {
-					return block;
+		if ( p.str[p.pos] === '{' ) {
+			tagTemp += p.str[p.pos];
+			this.adv(p);
+			// We have an @! There must be a tag, right?
+			if ( p.str[p.pos] === '@' ) {
+				tagTemp += p.str[p.pos];
+				this.adv(p);
+				// Look for a valid @pre tag
+				tag = this.parseTag(p);
+				if ( tag === tagName ) {
+					// Look for attributes
+					attrTemp = this.parseAttr(p);
+					while ( attrTemp !== null ) {
+						attr[attrTemp[0]] = attrTemp[1];
+						attrTemp = this.parseAttr(p);
+					}
+					if ( attr && attr.hasOwnProperty('type') ) {
+						preHandlerTypes[attr.type](p.data, attr, function(err, data) {
+							callback(err, data);
+						});
+					} else {
+						throw new Error("@pre currently requires the type attribute");
+					}
+					do {
+						this.adv(p);
+					} while ( p.str[p.pos] !== '}' );
+
+					this.adv(p);
+				} else {
+					// Parser ate the whitespace. Not sure what to do about that right now
+					callback(null, tagTemp + tag + ' ');
+					this.adv(p);
 				}
-				// Look for attributes
-				result = parseAttr();
-				while ( result !== null ) {
-					attr[result[0]] = result[1];
-					result = parseAttr();
-				}
-				if ( attr !== null ) {
-					return preHandlers[tag](data, attr);
-				}
-				return preHandlers[tag](data);
+			} else {
+				callback(null, tagTemp);
 			}
-			else {
-				throw new Error("Invalid tagname");
-			}
+		} else {
+			tagTemp = p.str[p.pos];
+			this.adv(p);
+			callback(null, tagTemp);
 		}
-		else {
-			throw new Error("Malformed precompile tag block.");
-		}
-	}
+	},
 
 	// Walks the beginning of a helper tag to get the name
-	function parseTag() {
-		var chr, result = [];
-		chr = parseKey();
+	parseTag: function(p) {
+		var chr, temp = [];
+		chr = this.parseKey(p);
 		while ( chr !== null ) {
-			result.push(chr);
-			adv();
-			chr = parseKey();
+			temp.push(chr);
+			this.adv(p);
+			chr = this.parseKey(p);
 		}
-		return result.join('');
-	}
+		return temp.join('');
+	},
 
-	// Walks through html-style attributes and gets a key/value pair to return
-	function parseAttr() {
+	/*
+		Walks through html-style attributes and gets a key/value pair to return
+		Markup is very whitespace forgiving, I try to do the same.
+
+		It looks like a do-while would work, however parse methods are written
+		to check the current character or desired set and don't automatically
+		advance the position
+	*/
+	parseAttr: function(p) {
 		var chr, key = [], value = [];
-		chr = parseWhite();
+		chr = this.parseWhite(p);
 		while ( chr !== null ) {
-			adv();
-			chr = parseWhite();
+			this.adv(p);
+			chr = this.parseWhite(p);
 		}
-		chr = parseKey();
+		chr = this.parseKey(p);
 		while ( chr !== null ) {
 			key.push(chr);
-			adv();
-			chr = parseKey();
+			this.adv(p);
+			chr = this.parseKey(p);
 		}
-		chr = parseAttrJoiner('=');
+		chr = this.parseAttrJoiner(p, '=');
 		while ( chr !== null ) {
-			adv();
-			chr = parseAttrJoiner('=');
+			this.adv(p);
+			chr = this.parseAttrJoiner(p, '=');
 		}
-		chr = parseWhite();
+		chr = this.parseWhite(p);
 		while ( chr !== null ) {
-			adv();
-			chr = parseWhite();
+			this.adv(p);
+			chr = this.parseWhite(p);
 		}
-		chr = parseValue();
+		chr = this.parseValue(p);
 		while ( chr !== null ) {
 			value.push(chr);
-			adv();
-			chr = parseValue();
+			this.adv(p);
+			chr = this.parseValue(p);
 		}
 		if ( key.length > 0 && value.length > 0 ) {
 			return [key.join(''), value.join('')];
 		}
 		return null;
-	}
+	},
 
 	// Walks what is defined as a valid key block for key/value pairs
-	function parseKey() {
-		if ( /[a-zA-Z_]/.test(block[pos]) ) {
-			return block[pos];
+	parseKey: function(p) {
+		if ( /[a-zA-Z_]/.test(p.str[p.pos]) ) {
+			return p.str[p.pos];
 		}
 		return null;
-	}
+	},
 
 	// Walks what is defined as a valid value block for key/value pairs.. will need work
-	function parseValue() {
-		if ( block[pos] === '"' || block[pos] === "'" ) {
-			adv();
+	parseValue: function(p) {
+		if ( p.str[p.pos] === '"' || p.str[p.pos] === "'" ) {
+			this.adv(p);
 		}
-		if ( /[a-zA-Z\.]/.test(block[pos]) ) {
-			return block[pos];
+		if ( /[a-zA-Z\.]/.test(p.str[p.pos]) ) {
+			return p.str[p.pos];
 		}
 		return null;
-	}
+	},
 
 	// Walks whitespace and a specific character until it finds neither
-	function parseAttrJoiner(joinee) {
+	parseAttrJoiner: function(p, joinee) {
 		var chr;
-		chr = parseWhite();
+		chr = this.parseWhite(p);
 		while ( chr !== null ) {
-			adv();
-			chr = parseWhite();
+			this.adv(p);
+			chr = this.parseWhite(p);
 		}
-		if ( block[pos] === joinee ) {
-			adv();
+		if ( p.str[p.pos] === joinee ) {
+			this.adv(p);
 		}
 		return null;
-	}
+	},
 
 	// Walk the whitespace until we hit non-whitespace
-	function parseWhite() {
-		if ( /\s/.test(block[pos]) ) {
-			return block[pos];
+	parseWhite: function(p) {
+		if ( /\s/.test(p.str[p.pos]) ) {
+			return p.str[p.pos];
 		}
 		return null;
 	}
-
-	return parseBlock();
 }
 
-exports = module.exports = {
-	parse: function (str, data, callback) {
-		var err, i, matches,
-			preSearch = /{@([^}]*)?\/?}/gi;
 
-		matches = str.match(preSearch);
-		try {
-			for ( i=0; i < matches.length; i++ ) {
-				str = str.replace(matches[i], parser(matches[i], data));
-			}
-		}
-		catch (e) {
-			err = e;
-		}
-		callback(err, str);
+exports = module.exports = {
+	config: function (tatersaladConfig) {
+		tatersalad.configure(tatersaladConfig || {});
+	},
+
+	parse: function (str, data, callback) {
+		parser.run(str, data, callback);
 	}
 };

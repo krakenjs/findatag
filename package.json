@@ -1,6 +1,6 @@
 {
   "name": "dust-prebuild",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A server-side node module that parses a string (template) for specific text ({@pre}) and uses some provided data (JSON) as a replacement",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.paypal.com:bspears/dust-prebuild.git"
+    "url": "git://github.paypal.com/bspears/dust-prebuild.git"
   },
   "engines": {
     "node": "0.8.x"
@@ -19,7 +19,10 @@
   ],
   "author": "Bryan Spears <bspears@paypal.com>",
   "license": "BSD",
-  "dependencies": {},
+  "dependencies": {
+    "async": "*",
+    "tatersalad": "git://github.paypal.com/bspears/tatersalad.git"
+  },
   "devDependencies": {
     "should": "*",
     "mocha": "*"
