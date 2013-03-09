@@ -5,9 +5,9 @@ var should = require('should'),
 
 prebuild.config({path:'./test/locales/'});
 
-var inputStr = '<p>{@pre type="content" key="test.value" /}</p><p>{@helper attr="value"/} {randomData}</p><p>{@pre type="content" key="test.otherValue"/}</p><p>{@pre type="content" key="missing.content"/}</p>';
+var inputStr = '<p>{@pre type="content" key="test.value" /}</p><p>{@helper attr="value"/} {randomData}</p><p>{@pre type="content" key="test.otherValue"/}</p><p>{@pre type="content" key="missing.content"/}</p><p>{@pre type="content" key="component.missing.content"/}</p>';
 var inputData = {"test":{"value":"resultantValue", "otherValue":"otherResultantValue"}};
-var correctResult = '<p>resultantValue</p><p>{@helper attr="value"/} {randomData}</p><p>otherResultantValue</p><p>You found me!</p>';
+var correctResult = '<p>resultantValue</p><p>{@helper attr="value"/} {randomData}</p><p>otherResultantValue</p><p>You found me!</p><p>You also found me!</p>';
 
 describe('dust-prebuild', function() {
 	describe('#parse', function() {
