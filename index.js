@@ -13,7 +13,7 @@ var tatersalad = require('tatersalad'),
 */
 function getObjectValue(str, obj) {
 	return str.split('.').reduce( function(o, i) {
-		return (o) ? o[i] : null;
+		return (o) ? o[i] : str;
 	}, obj);
 }
 
@@ -21,22 +21,13 @@ function getObjectValue(str, obj) {
 /*
 	A list of types used to handle @pre prebuilding
 	Could potentially handle images, urls, and whatever else
-	TODO: Should use tatersalad to look up unknown keys
 */
 var preHandlerTypes = {
-	'content': function(data, args, callback) {
-		var result, root;
+	'content': function(viewName, args, callback) {
 		if ( args && args.hasOwnProperty('key') ) {
-			result = getObjectValue(args.key, data);
-			if ( result === null ) {
-				root = args.key.split('.')[0];
-				tatersalad.loadContent(root, function(err, content) {
-					callback(err, getObjectValue(args.key, content));
-				});
-			}
-			else {
-				callback(null, result);
-			}
+			tatersalad.loadContent(viewName, args.locale, function(err, data) {
+				callback(err, getObjectValue(args.key, data));
+			});
 		} else {
 			throw new Error("@pre with type=\"content\" requires the key attribute");
 		}
@@ -57,18 +48,19 @@ var parser = {
 		Basic loop to walk over the entire string and look for
 		valid @pre blocks
 	*/
-	run: function(str, data, callback) {
-		var p = {pos: 0, str: str, data: data},
+	run: function(viewName, templateStr, locale, callback) {
+		var p = {pos: 0, str: templateStr, view: viewName, locale: locale},
 			result = [];
 
 		async.doWhilst(
 			function(cb) {
 				parser.parseBlock(p, function(err, content) {
 					if ( err ) {
-						callback(err, str);
+						callback(err, p.str);
+					} else {
+						result.push(content);
+						cb();
 					}
-					result.push(content);
-					cb();
 				});
 			},
 			function() { return p.pos < p.str.length; },
@@ -107,7 +99,8 @@ var parser = {
 						attrTemp = this.parseAttr(p);
 					}
 					if ( attr && attr.hasOwnProperty('type') ) {
-						preHandlerTypes[attr.type](p.data, attr, function(err, data) {
+						attr.locale = p.locale;
+						preHandlerTypes[attr.type](p.view, attr, function(err, data) {
 							callback(err, data);
 						});
 					} else {
@@ -236,7 +229,5 @@ exports = module.exports = {
 		tatersalad.configure(tatersaladConfig || {});
 	},
 
-	parse: function (str, data, callback) {
-		parser.run(str, data, callback);
-	}
+	parse: parser.run
 };
