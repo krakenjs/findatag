@@ -51,7 +51,6 @@ var parser = {
 	run: function(viewName, templateStr, locale, callback) {
 		var p = {pos: 0, str: templateStr, view: viewName, locale: locale},
 			result = [];
-
 		async.doWhilst(
 			function(cb) {
 				parser.parseBlock(p, function(err, content) {
