@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.paypal.com/bspears/dust-prebuild.git"
+    "url": "git://github.paypal.com/CoreUIE/dust-prebuild.git"
   },
   "engines": {
     "node": "0.8.x"
@@ -20,8 +20,8 @@
   "author": "Bryan Spears <bspears@paypal.com>",
   "license": "BSD",
   "dependencies": {
-    "async": "*",
-    "tatersalad": "git://github.paypal.com/CoreUIE/tatersalad.git"
+    "async": "0.2.x",
+    "tatersalad": "git://github.paypal.com/CoreUIE/tatersalad.git#0.0.1"
   },
   "devDependencies": {
     "should": "*",
