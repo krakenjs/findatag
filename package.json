@@ -21,7 +21,7 @@
   "license": "BSD",
   "dependencies": {
     "async": "0.2.x",
-    "tatersalad": "git://github.paypal.com/CoreUIE/tatersalad.git#0.0.1"
+    "tatersalad": "git://github.paypal.com/CoreUIE/tatersalad.git#v0.0.1"
   },
   "devDependencies": {
     "should": "*",
