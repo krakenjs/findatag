@@ -58,6 +58,10 @@ var parser = {
 						callback(err, p.str);
 					} else {
 						result.push(content);
+						while (p.pos < p.str.length && p.str[p.pos] !== '{') {
+                            result.push(p.str[p.pos]);
+                            parser.adv(p);
+                        }
 						cb();
 					}
 				});
@@ -79,7 +83,8 @@ var parser = {
 			tagTemp = '',
 			attr = {},
 			tag = '',
-			tagName = 'pre';
+			tagName = 'pre',
+			self = this;
 		// Ignore the open brace
 		if ( p.str[p.pos] === '{' ) {
 			tagTemp += p.str[p.pos];
@@ -100,16 +105,16 @@ var parser = {
 					if ( attr && attr.hasOwnProperty('type') ) {
 						attr.locale = p.locale;
 						preHandlerTypes[attr.type](p.view, attr, function(err, data) {
+							while ( p.str[p.pos] !== '}' ) {
+								self.adv(p);
+							};
+							self.adv(p);
+
 							callback(err, data);
 						});
 					} else {
-						throw new Error("@pre currently requires the type attribute");
+						throw new Error("@pre requires the type attribute");
 					}
-					do {
-						this.adv(p);
-					} while ( p.str[p.pos] !== '}' );
-
-					this.adv(p);
 				} else {
 					// Parser ate the whitespace. Not sure what to do about that right now
 					callback(null, tagTemp + tag + ' ');
