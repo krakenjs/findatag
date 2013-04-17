@@ -53,18 +53,20 @@ var parser = {
 			result = [];
 		async.doWhilst(
 			function(cb) {
-				parser.parseBlock(p, function(err, content) {
-					if ( err ) {
-						callback(err, p.str);
-					} else {
-						result.push(content);
-						while (p.pos < p.str.length && p.str[p.pos] !== '{') {
-                            result.push(p.str[p.pos]);
-                            parser.adv(p);
-                        }
-						cb();
-					}
-				});
+				if ( p.str[p.pos] !== '{' ) {
+					result.push(p.str[p.pos]);
+					parser.adv(p);
+					cb();
+				} else {
+					parser.parseBlock(p, function(err, content) {
+						if ( err ) {
+							callback(err, p.str);
+						} else {
+							result.push(content);
+							cb();
+						}
+					});
+				}
 			},
 			function() { return p.pos < p.str.length; },
 			function(err) {
@@ -116,8 +118,7 @@ var parser = {
 						throw new Error("@pre requires the type attribute");
 					}
 				} else {
-					// Parser ate the whitespace. Not sure what to do about that right now
-					callback(null, tagTemp + tag + ' ');
+					callback(null, tagTemp + tag);
 					this.adv(p);
 				}
 			} else {
