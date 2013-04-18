@@ -100,4 +100,24 @@ describe('parseStream', function () {
         fs.createReadStream('./test/templates/missing.dust').pipe(stream);
     });
 
+
+    it('should handle a file regardless of size', function (next) {
+        var output = [];
+
+        var stream = new ParseStream(chunkResolver);
+        stream.on('data', function (chunk) {
+            output.push(chunk);
+        });
+
+        stream.on('finish', function () {
+            var buffer = Buffer.concat(output);
+            assert(buffer.toString('utf8'));
+            assert.strictEqual(buffer.length, fs.statSync('./test/templates/largo.dust').size);
+            next();
+        });
+
+        fs.createReadStream('./test/templates/largo.dust').pipe(stream);
+
+    });
+
 });
