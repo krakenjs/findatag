@@ -1,8 +1,8 @@
-REPORTER = dot
+REPORTER = spec
 
 test:
 	@NODE_ENV=test ./node_modules/.bin/mocha \
-		--require should \
+		--require chai \
 		--reporter $(REPORTER)
 
 .PHONY: test

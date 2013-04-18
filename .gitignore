@@ -1,15 +1,12 @@
-# Project Specifics #
-#####################
+.idea
 .project
-.settings/*
+.settings
 .build
 build
 *.log
 node_modules
-/logs
+logs
 
-# OS generated files #
-######################
 .DS_Store*
 ehthumbs.db
 Icon?

@@ -21,10 +21,12 @@
   "license": "BSD",
   "dependencies": {
     "async": "0.2.x",
-    "tatersalad": "git://github.paypal.com/CoreUIE/tatersalad.git#v0.0.1"
+    "tatersalad": "git://github.paypal.com/CoreUIE/tatersalad.git#v0.0.1",
+    "readable-stream": "~1.0.2",
+    "objutil": "~0.3.0"
   },
   "devDependencies": {
-    "should": "*",
-    "mocha": "*"
+    "chai": "~1.5.0",
+    "mocha": "~1.9.0"
   }
 }
