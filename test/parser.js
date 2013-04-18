@@ -342,6 +342,29 @@ describe('parser', function () {
         });
 
 
+        it('should support dots (.) in attribute values', function (next) {
+            var orig, tag;
+
+            orig = 'This is a {@pre foo baz=foo.bam gar="whuh.no" /} chunk.';
+
+            parser.once('tag', function (def) {
+                tag = def;
+            });
+
+            parser.once('end', function () {
+                assert.ok(tag);
+                assert.strictEqual(tag.name, 'pre');
+                assert.typeOf(tag.attributes, 'object');
+                assert.strictEqual(tag.attributes.foo, 'foo');
+                assert.strictEqual(tag.attributes.baz, 'foo.bam');
+                assert.strictEqual(tag.attributes.gar, 'whuh.no');
+                next();
+            });
+
+            parser.write(orig).close();
+        });
+
+
         it('should parse multiple tags', function (next) {
             var orig, tags, chunks;
 
