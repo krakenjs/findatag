@@ -16,9 +16,6 @@ describe('dust-prebuild', function() {
 
 		it('should parse the input string, replace where possible, and return a resultant string', function(next) {
 			prebuild.parse("missing", fs.readFileSync('test/templates/missing.dust', 'utf8'), 'en-US', function(err, result) {
-                console.log('\n');
-                console.dir(correctResult);
-                console.dir(result);
                 assert.ok(!err);
                 assert.ok(result);
                 assert.strictEqual(result, correctResult);
