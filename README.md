@@ -41,7 +41,7 @@ The method invoked when any given tag is enountered. The tag definition is has t
 {
     name: 'tagname',
     attributes: {
-        'attributeName': 'attributeValue
+        'attributeName': 'attributeValue'
     }
 }
 ```
@@ -53,7 +53,7 @@ original tag.
 // ...
 
 onTag: function (def, cb) {
-    cb(null, def.name.toUpperCase()
+    cb(null, def.name.toUpperCase());
 }
 
 //...
