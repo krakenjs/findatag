@@ -1,4 +1,4 @@
-dust-prebuild
+curlyfinder
 ==========
 
 String parser configured to recognize a particular pattern: `{@[A-Za-z._] [attrs...]/}`.
