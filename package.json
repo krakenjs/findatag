@@ -1,14 +1,14 @@
 {
-  "name": "dust-prebuild",
+  "name": "curlyfinder",
   "version": "0.0.1",
-  "description": "A server-side node module that parses a string (template) for specific text ({@pre}) and uses some provided data (JSON) as a replacement",
+  "description": "A specialized tokenizer for finding dust-style tags ({@tagname [attributes]})",
   "main": "index.js",
   "scripts": {
     "test": "make test"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.paypal.com/CoreUIE/dust-prebuild.git"
+    "url": "git://github.paypal.com/webcore/curlyfinder.git"
   },
   "engines": {
     "node": "0.8.x"
@@ -21,7 +21,6 @@
   "license": "BSD",
   "dependencies": {
     "async": "0.2.x",
-    "tatersalad": "git://github.paypal.com/CoreUIE/tatersalad.git#v0.0.1",
     "readable-stream": "~1.0.2",
     "objutil": "~0.3.0"
   },
