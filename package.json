@@ -1,5 +1,5 @@
 {
-  "name": "curlyfinder",
+  "name": "tagfinder",
   "version": "0.0.1",
   "description": "A specialized tokenizer for finding dust-style tags ({@tagname [attributes]})",
   "main": "index.js",
