@@ -2,7 +2,7 @@
 'use strict';
 
 var assert = require('chai').assert,
-    parser = require('../index'),
+    finder = require('../index'),
     fs = require('fs');
 
 
@@ -19,7 +19,7 @@ describe('parser', function () {
                 }
             };
 
-            parser.parse('./test/templates/missing.dust', handler, function (err, result) {
+            finder.parse('./test/templates/missing.dust', handler, function (err, result) {
                 assert.ok(!err);
                 assert.strictEqual(result, '<p>pre</p><p>{@helper attr="value"/} {randomData}</p><p>pre</p><p>pre</p>');
                 next();
@@ -36,7 +36,7 @@ describe('parser', function () {
                 }
             };
 
-            parser.parse('./test/templates/missing.dust', handler, function (err, result) {
+            finder.parse('./test/templates/missing.dust', handler, function (err, result) {
                 assert.ok(!err);
                 assert.strictEqual(result, '<p>{@pre type="content" key="missing.value" /}</p><p>helper {randomData}</p><p>{@pre type="content" key="missing.otherValue"/}</p><p>{@pre type="content" key="missing.content"/}</p>');
                 next();
@@ -53,7 +53,7 @@ describe('parser', function () {
                 }
             };
 
-            parser.parse('./test/templates/missing.dust', handler, function (err, result) {
+            finder.parse('./test/templates/missing.dust', handler, function (err, result) {
                 assert.ok(!err);
                 assert.strictEqual(result, '<p>pre</p><p>helper {randomData}</p><p>pre</p><p>pre</p>');
                 next();

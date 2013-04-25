@@ -1,7 +1,7 @@
 curlyfinder
 ==========
 
-String parser configured to recognize a particular pattern: `{@[A-Za-z._] [attrs...]/}`.
+String finder configured to recognize a particular pattern: `{@[A-Za-z._] [attrs...]/}`.
 
 
 ### API
@@ -9,9 +9,9 @@ String parser configured to recognize a particular pattern: `{@[A-Za-z._] [attrs
 #### createParseStream(entityHandler)
 This factory method creates a ParseStream initialized with the provided entity handler.
 ```javascript
-var parser = require('dust-prebuild');
+var finder = require('curlyfinder');
 
-var stream = parser.createParseStream(handler);
+var stream = finder.createParseStream(handler);
 fs.createReadStream('./file/to/process').pipe(stream).pipe(process.stdout);
 ```
 
@@ -19,9 +19,9 @@ fs.createReadStream('./file/to/process').pipe(stream).pipe(process.stdout);
 #### parse(file, entityHandler, callback)
 Reads the file at the given file path and parses it, passing entity information to the provided entity handler.
 ```javascript
-var parser = require('dust-prebuild');
+var finder = require('curlyfinder');
 
-parser.process('./file/to/process', handler, function (err, result) {
+finder.process('./file/to/process', handler, function (err, result) {
     // result is the full processed file
 });
 ```
@@ -67,7 +67,7 @@ This optional delegate method can perform operations on the provide text chunk. 
 
 ### Example
 ```javascript
-var parser = require('dust-prebuild');
+var finder = require('curlyfinder');
 
 var entityHandler = {
     _handlers: {
