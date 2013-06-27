@@ -25,6 +25,8 @@ module.exports = {
             callback(null, Buffer.concat(chunks).toString('utf8'));
         });
 
+        stream.on('error', callback);
+
         fs.createReadStream(file).pipe(stream);
     }
 
