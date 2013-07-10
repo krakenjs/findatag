@@ -126,25 +126,25 @@ describe('parser', function () {
         });
 
 
-        it('should report malformed tags', function () {
-            var err;
-
-            try {
-                parser.write('Foo {@bar} baz').close();
-            } catch (error) {
-                err = error;
-            } finally {
-                assert.ok(err);
-            }
-
-            try {
-                parser.write('Foo {@bar } baz').close();
-            } catch (error) {
-                err = error;
-            } finally {
-                assert.ok(err);
-            }
-        });
+//        it('should report malformed tags', function () {
+//            var err;
+//
+//            try {
+//                parser.write('Foo {@bar} baz').close();
+//            } catch (error) {
+//                err = error;
+//            } finally {
+//                assert.ok(err);
+//            }
+//
+//            try {
+//                parser.write('Foo {@bar } baz').close();
+//            } catch (error) {
+//                err = error;
+//            } finally {
+//                assert.ok(err);
+//            }
+//        });
 
 
         it('should ignore tag-like syntax combined with real tags', function (next) {
@@ -399,6 +399,43 @@ describe('parser', function () {
 
                 next();
             });
+
+            parser.write(orig).close();
+        });
+
+
+        it('should parse only self-closing tags', function (next) {
+            var orig, tags, chunks;
+
+            orig = 'This is a {@default}{/default}{@helper } {@pre type="content" key="test"/} {/helper} {@stephen is="cool"} test {/stephen}.';
+            tags = [];
+            chunks = [];
+
+            parser.on('text', function (chunk) {
+                chunks.push(chunk);
+            });
+
+            parser.on('tag', function (def) {
+                tags.push(def);
+            });
+
+            parser.once('end', function () {
+                var result = chunks.join('');
+
+                assert.strictEqual(tags.length, 1);
+                assert.strictEqual(tags[0].name, 'pre');
+                assert.typeOf(tags[0].attributes, 'object');
+                assert.strictEqual(tags[0].attributes.type, 'content');
+                assert.strictEqual(tags[0].attributes.key, 'test');
+
+                assert.strictEqual(chunks.length, 2);
+                assert.strictEqual(chunks[0], 'This is a {@default}{/default}{@helper } ');
+                assert.strictEqual(chunks[1], ' {/helper} {@stephen is="cool"} test {/stephen}.');
+                assert.strictEqual(result, 'This is a {@default}{/default}{@helper }  {/helper} {@stephen is="cool"} test {/stephen}.');
+
+                next();
+            });
+
 
             parser.write(orig).close();
         });
