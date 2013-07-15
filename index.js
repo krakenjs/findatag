@@ -12,22 +12,29 @@ module.exports = {
 
 
     parse: function (file, entityHandler, callback) {
-        var stream, chunks;
+        var readStream, parseStream, chunks;
 
-        stream = this.createParseStream(entityHandler);
         chunks = [];
 
-        stream.on('data', function (chunk) {
+        // Create file read stream and deal with errors
+        readStream = fs.createReadStream(file);
+        readStream.on('error', callback);
+
+        // Create parse stream, handle data events and errors
+        parseStream = this.createParseStream(entityHandler);
+        parseStream.on('error', callback);
+
+        parseStream.on('data', function (chunk) {
             chunks.push(chunk);
         });
 
-        stream.on('finish', function () {
+        parseStream.on('finish', function () {
             callback(null, Buffer.concat(chunks).toString('utf8'));
         });
 
-        stream.on('error', callback);
 
-        fs.createReadStream(file).pipe(stream);
+        // Start processing
+        readStream.pipe(parseStream);
     }
 
 };

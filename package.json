@@ -1,23 +1,29 @@
 {
   "name": "tagfinder",
-  "version": "0.0.3",
-  "description": "A specialized tokenizer for finding dust-style tags ({@tagname [attributes]})",
+  "version": "0.0.4",
+  "description": "A specialized tokenizer for finding dust-style tags ({@tagname [attributes]/})",
   "main": "index.js",
   "scripts": {
     "test": "make test"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.paypal.com/webcore/curlyfinder.git"
+    "url": "git://github.paypal.com/webcore/node-tagfinder.git"
   },
   "engines": {
-    "node": "0.8.x"
+    "node": ">=0.8.x"
   },
   "keywords": [
     "dust",
     "templating"
   ],
   "author": "Bryan Spears <bspears@paypal.com>",
+  "contributors": [
+    {
+      "name": "Erik Toth",
+      "email": "ertoth@paypal.com"
+    }
+  ],
   "license": "BSD",
   "dependencies": {
     "async": "0.2.x",
