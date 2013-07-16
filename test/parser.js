@@ -517,6 +517,46 @@ describe('parser', function () {
             parser.write(orig).close();
         });
 
+
+        it('should not allow unclosed quoted attributes', function (next) {
+            var orig, tags, chunks;
+
+            orig = 'This is a {@pre bam=" /} chunk. {@pre foo="bar" /}';
+            tags = [];
+            chunks = [];
+
+            parser.on('text', function (chunk) {
+                chunks.push(chunk);
+            });
+
+            parser.on('tag', function (def) {
+                tags.push(def);
+            });
+
+            parser.once('end', function () {
+                assert.strictEqual(tags.length, 0);
+                assert.strictEqual('This is a " /}', Buffer.concat(chunks));
+                next();
+            });
+
+            parser.write(orig).close();
+        });
+
+
+        it('should not allow arbitrary quotes in unquoted attributes', function () {
+            var orig, error;
+
+            orig = 'This is a {@pre bam=baz"bam /}{@call me="maybe"/} chunk.';
+
+            try {
+                parser.write(orig).close();
+            } catch (err) {
+                error = err;
+            } finally {
+                assert.isObject(error);
+            }
+        });
+
     });
 
 
