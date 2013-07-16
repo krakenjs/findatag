@@ -440,6 +440,83 @@ describe('parser', function () {
             parser.write(orig).close();
         });
 
+
+        it('should allow tags as attributes', function (next) {
+            var orig, tags, chunks;
+
+            orig = '{>foo name="{@pre type="content" key="test"/}"/}';
+            tags = [];
+            chunks = [];
+
+            parser.on('text', function (chunk) {
+                chunks.push(chunk);
+            });
+
+            parser.on('tag', function (def) {
+                tags.push(def);
+            });
+
+            parser.once('end', function () {
+                var result = chunks.join('');
+
+                assert.strictEqual(tags.length, 1);
+                assert.strictEqual(tags[0].name, 'pre');
+                assert.typeOf(tags[0].attributes, 'object');
+                assert.strictEqual(tags[0].attributes.type, 'content');
+                assert.strictEqual(tags[0].attributes.key, 'test');
+
+                assert.strictEqual(chunks.length, 2);
+                assert.strictEqual(chunks[0], '{>foo name="');
+                assert.strictEqual(chunks[1], '"/}');
+                assert.strictEqual(result, '{>foo name=""/}');
+
+                next();
+            });
+
+
+            parser.write(orig).close();
+        });
+
+
+        it('should allow whitespace in quoted attributes', function (next) {
+            var orig, tags, chunks;
+
+            orig = 'This is a {@pre foo baz=bam sep=", " /}{@call me="maybe"/} chunk.';
+            tags = [];
+            chunks = [];
+
+            parser.on('text', function (chunk) {
+                chunks.push(chunk);
+            });
+
+            parser.on('tag', function (def) {
+                tags.push(def);
+            });
+
+            parser.once('end', function () {
+                assert.strictEqual(tags.length, 2);
+
+                assert.strictEqual(tags[0].name, 'pre');
+                assert.typeOf(tags[0].attributes, 'object');
+                assert.strictEqual(tags[0].attributes.foo, 'foo');
+                assert.strictEqual(tags[0].attributes.baz, 'bam');
+                assert.strictEqual(tags[0].attributes.sep, ', ');
+
+                assert.strictEqual(tags[1].name, 'call');
+                assert.typeOf(tags[1].attributes, 'object');
+                assert.strictEqual(tags[1].attributes.me, 'maybe');
+
+
+                assert.strictEqual(chunks.length, 2);
+                assert.strictEqual(chunks[0], 'This is a ');
+                assert.strictEqual(chunks[1], ' chunk.');
+
+                next();
+            });
+
+            parser.write(orig).close();
+        });
+
     });
 
 
