@@ -535,7 +535,7 @@ describe('parser', function () {
 
             parser.once('end', function () {
                 assert.strictEqual(tags.length, 0);
-                assert.strictEqual('This is a " /}', Buffer.concat(chunks));
+                assert.strictEqual('This is a " /}', chunks.join(''));
                 next();
             });
 
@@ -555,6 +555,35 @@ describe('parser', function () {
             } finally {
                 assert.isObject(error);
             }
+        });
+
+        it('should allow any char in a quoted attribute value', function (next) {
+            var orig, tags, chunks;
+
+            orig = 'This is a {@pre bam="</li>" /} chunk.';
+            tags = [];
+            chunks = [];
+
+            parser.on('text', function (chunk) {
+                chunks.push(chunk);
+            });
+
+            parser.on('tag', function (def) {
+                tags.push(def);
+            });
+
+            parser.once('end', function () {
+                assert.strictEqual(tags.length, 1);
+                assert.strictEqual(tags[0].name, 'pre');
+                assert.typeOf(tags[0].attributes, 'object');
+                assert.strictEqual(tags[0].attributes.bam, '</li>');
+
+                assert.strictEqual(chunks.length, 2);
+                assert.strictEqual('This is a  chunk.', chunks.join(''));
+                next();
+            });
+
+            parser.write(orig).close();
         });
 
     });
