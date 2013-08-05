@@ -1,6 +1,6 @@
 {
   "name": "tagfinder",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A specialized tokenizer for finding dust-style tags ({@tagname [attributes]/})",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "url": "git://github.paypal.com/webcore/node-tagfinder.git"
   },
   "engines": {
-    "node": ">=0.8.x"
+    "node": ">=0.10.4"
   },
   "keywords": [
     "dust",
@@ -27,7 +27,7 @@
   "license": "BSD",
   "dependencies": {
     "async": "0.2.x",
-    "readable-stream": "~1.0.2",
+    "readable-stream": "1.0.15",
     "objutil": "~0.3.0"
   },
   "devDependencies": {
