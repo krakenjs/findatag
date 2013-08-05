@@ -6,7 +6,7 @@ var assert = require('chai').assert,
     fs = require('fs');
 
 
-describe('parser', function () {
+describe('API', function () {
 
     describe('process', function () {
 
