@@ -45,7 +45,7 @@
     // Whether the "use strict"; pragma should be required.
     "strict": true,
     // Whether global "use strict"; should be allowed (also enables strict).
-    "globalstrict": false,
+    "globalstrict": true,
 
 
     // The Good Parts
