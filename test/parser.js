@@ -318,6 +318,27 @@ describe('parser', function () {
             parser.write(orig).close();
         });
 
+        it('should emit a tag event for tags with quoted attributes using escapes and handle control chars', function (next) {
+            var orig, tag;
+
+// Double escape of backslash needed to get the right number into the processing code from the test environs.
+            orig = 'This is a {@pre foo="b\\tar"  baz="b\\bam" /} chunk.';
+            parser.once('tag', function (def) {
+                tag = def;
+console.log(tag);
+            });
+
+            parser.once('end', function () {
+                assert.ok(tag);
+                assert.strictEqual(tag.name, 'pre');
+                assert.typeOf(tag.attributes, 'object');
+                assert.strictEqual(tag.attributes.foo, 'b\tar');
+                assert.strictEqual(tag.attributes.baz, 'b\bam');
+                next();
+            });
+
+            parser.write(orig).close();
+        });
 
         it('should emit a tag event for tags with a attributes sans quotes', function (next) {
             var orig, tag;
