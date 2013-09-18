@@ -325,7 +325,6 @@ describe('parser', function () {
             orig = 'This is a {@pre foo="b\\tar"  baz="b\\bam" /} chunk.';
             parser.once('tag', function (def) {
                 tag = def;
-console.log(tag);
             });
 
             parser.once('end', function () {
