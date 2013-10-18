@@ -1,5 +1,5 @@
 {
-  "name": "tagfinder",
+  "name": "findatag",
   "version": "0.0.8",
   "description": "A specialized tokenizer for finding dust-style tags ({@tagname [attributes]/})",
   "main": "index.js",
@@ -24,8 +24,13 @@
       "email": "ertoth@paypal.com"
     }
   ],
-  "license": "BSD",
-  "dependencies": {
+  "licenses": [
+        {
+            "type": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        }
+    ],
+    "dependencies": {
     "async": "0.2.x",
     "readable-stream": "1.0.15"
   },

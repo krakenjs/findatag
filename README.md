@@ -1,4 +1,4 @@
-tagfinder
+findatag
 ==========
 
 String tokenizer configured to recognize a particular pattern: `{@[A-Za-z._] [attrs...]/}`.
@@ -9,7 +9,7 @@ String tokenizer configured to recognize a particular pattern: `{@[A-Za-z._] [at
 #### createParseStream(entityHandler)
 This factory method creates a ParseStream initialized with the provided entity handler.
 ```javascript
-var finder = require('tagfinder');
+var finder = require('findatag');
 
 var stream = finder.createParseStream(handler);
 fs.createReadStream('./file/to/process').pipe(stream).pipe(process.stdout);
@@ -19,7 +19,7 @@ fs.createReadStream('./file/to/process').pipe(stream).pipe(process.stdout);
 #### parse(file, entityHandler, callback)
 Reads the file at the given file path and parses it, passing entity information to the provided entity handler.
 ```javascript
-var finder = require('tagfinder');
+var finder = require('findatag');
 
 finder.process('./file/to/process', handler, function (err, result) {
     // result is the full processed file
@@ -67,7 +67,7 @@ This optional delegate method can perform operations on the provide text chunk. 
 
 ### Example
 ```javascript
-var finder = require('tagfinder');
+var finder = require('findatag');
 
 var entityHandler = {
     _handlers: {
