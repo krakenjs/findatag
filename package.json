@@ -1,6 +1,6 @@
 {
   "name": "findatag",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "A specialized tokenizer for finding dust-style tags ({@tagname [attributes]/})",
   "main": "index.js",
   "scripts": {
@@ -30,7 +30,7 @@
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         }
     ],
-    "dependencies": {
+  "dependencies": {
     "async": "0.2.x",
     "readable-stream": "1.0.15"
   },
