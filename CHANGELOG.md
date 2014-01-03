@@ -1,3 +1,14 @@
+##### v0.1.0 - 20140102
+**Bugs**
+- None
+
+**Features**
+- Diagnose use of single quotes in @pre attributes (e.g. {@pre foo='bar' /}. pre syntax is similar to dust
+  helpers and dust does not allow single quotes for parameter values. Before this change, users failed to 
+  match property files if they used single quotes because the value ended up including the single quotes.
+  This is hard to figure out. Bumping version to 0.1.0 since this is an incompatible change though very
+  unlikely to be an issue for anyone.
+
 ##### v0.0.9 - 20131022
 **Bugs**
 - None
