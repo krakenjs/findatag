@@ -276,6 +276,26 @@ describe('parser', function () {
             parser.write(orig).close();
         });
 
+        it('should emit a tag event for tags with a quoted attribute containing a single quote', function (next) {
+            var orig, tag;
+
+            orig = "This is a {@pre foo=\"don't\"/} chunk.";
+
+            parser.once('tag', function (def) {
+                tag = def;
+            });
+
+            parser.once('end', function () {
+                assert.ok(tag);
+                assert.strictEqual(tag.name, 'pre');
+                assert.typeOf(tag.attributes, 'object');
+                assert.strictEqual(tag.attributes.foo, "don't");
+                next();
+            });
+
+            parser.write(orig).close();
+        });
+
 
         it('should emit a tag event for tags with quoted attributes', function (next) {
             var orig, tag;
@@ -588,6 +608,20 @@ describe('parser', function () {
             var orig, error;
 
             orig = 'This is a {@pre bam=baz"bam /}{@call me="maybe"/} chunk.';
+
+            try {
+                parser.write(orig).close();
+            } catch (err) {
+                error = err;
+            } finally {
+                assert.isObject(error);
+            }
+        });
+
+        it('should not allow single quoting in attributes', function () {
+            var orig, error;
+
+            orig = "This is a {@pre bam=baz='bam' /} chunk.";
 
             try {
                 parser.write(orig).close();
