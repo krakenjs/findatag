@@ -33,6 +33,7 @@
   ],
   "dependencies": {
     "async": "0.2.x",
+    "bl": "^0.9.0",
     "readable-stream": "1.0.15"
   },
   "devDependencies": {

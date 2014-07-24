@@ -1,43 +1,39 @@
-/*global describe:false, before:false, beforeEach:false, after:false, it:false*/
+/*global describe:false, it:false*/
 'use strict';
 
 var assert = require('chai').assert,
-    Parser = require('../lib/parser');
+    findatag = require('..'),
+    events = require('events');
 
 describe('parser', function () {
 
-    var options = { tags: 'pre, call' };
-    var parser;
+    var ee = new events.EventEmitter();
+    var options = {
+        tags: 'pre, call',
+        onTag: function (tag, cb) {
+            ee.emit('tag', tag);
+            cb(null, '');
+        },
+        onText: function (text, cb) {
+            ee.emit('text', text);
+            cb(null, text);
+        }
+    };
 
-    beforeEach(function () {
-        parser = new Parser(options);
-    });
-
-
-    describe('end', function () {
+    describe('finish', function () {
 
         it('should write and close', function (next) {
-            parser.once('end', next);
-            parser.write('Test').close();
+            var parser = findatag.createParseStream(options);
+            parser.once('finish', next);
+            parser.end('Test');
         });
 
 
         it('should support multiple writes', function (next) {
-            parser.on('end', next);
-            parser.write('test').write('foo').close();
-        });
-
-
-        it('should error on multiple closes', function () {
-            var err;
-            try {
-                parser.write('test').close();
-                parser.close();
-            } catch (error) {
-                err = error;
-            } finally {
-                assert.ok(err);
-            }
+            var parser = findatag.createParseStream(options);
+            parser.on('finish', next);
+            parser.write('test');
+            parser.end('foo');
         });
 
     });
@@ -46,55 +42,64 @@ describe('parser', function () {
     describe('text', function () {
 
         it('should emit text events', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, chunk;
+
+            ee = new events.EventEmitter();
 
             orig = 'This is a text chunk.';
 
-            parser.once('text', function (text) {
+            ee.once('text', function (text) {
                 chunk = text;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(orig, chunk);
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should emit multiple text events', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, chunks;
 
             orig = 'This is a text {@pre/} chunk.';
             chunks = [];
 
-            parser.on('text', function (text) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (text) {
                 chunks.push(text);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(chunks.length, 2);
                 assert.strictEqual(chunks[0], 'This is a text ');
                 assert.strictEqual(chunks[1], ' chunk.');
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should emit multiple text events regardless of tags', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, chunks;
 
             orig = 'This is a {@pre /} text {@pre/} chunk.';
             chunks = [];
 
-            parser.on('text', function (text) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (text) {
                 chunks.push(text);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(chunks.length, 3);
                 assert.strictEqual(chunks[0], 'This is a ');
                 assert.strictEqual(chunks[1], ' text ');
@@ -102,27 +107,30 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should ignore tag-like syntax', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, chunks;
 
             orig = 'This, {} is an object {@} {@ } { @} { @ } {@/} {@ /} {@/ } {@!/} {@ whuh} literal.';
             chunks = [];
 
-            parser.on('text', function (text) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (text) {
                 chunks.push(text);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(chunks.length, 1);
                 assert.strictEqual(chunks[0], 'This, {} is an object {@} {@ } { @} { @ } {@/} {@ /} {@/ } {@!/} {@ whuh} literal.');
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
@@ -130,7 +138,7 @@ describe('parser', function () {
 //            var err;
 //
 //            try {
-//                parser.write('Foo {@bar} baz').close();
+//                parser.end('Foo {@bar} baz');
 //            } catch (error) {
 //                err = error;
 //            } finally {
@@ -138,7 +146,7 @@ describe('parser', function () {
 //            }
 //
 //            try {
-//                parser.write('Foo {@bar } baz').close();
+//                parser.end('Foo {@bar } baz');
 //            } catch (error) {
 //                err = error;
 //            } finally {
@@ -148,38 +156,44 @@ describe('parser', function () {
 
 
         it('should ignore tag-like syntax combined with real tags', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, chunks;
 
             orig = 'This, {@} is not an object literal {@!}{@pre/}.';
             chunks = [];
 
-            parser.on('text', function (text) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (text) {
                 chunks.push(text);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(chunks.length, 2);
                 assert.strictEqual(chunks[0], 'This, {@} is not an object literal {@!}');
                 assert.strictEqual(chunks[1], '.');
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should preserve correct state across multiple writes', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig1, orig2, chunks;
 
             orig1 = 'This, {@} is not an {@p';
             orig2 = 're/} object literal {@pre/}.';
             chunks = [];
 
-            parser.on('text', function (text) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (text) {
                 chunks.push(text);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(chunks.length, 3);
                 assert.strictEqual(chunks[0], 'This, {@} is not an ');
                 assert.strictEqual(chunks[1], ' object literal ');
@@ -187,7 +201,8 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig1).write(orig2).close();
+            parser.write(orig1);
+            parser.end(orig2);
         });
 
 
@@ -197,75 +212,87 @@ describe('parser', function () {
     describe('tag', function () {
 
         it('should support tags with no attributes but whitespace', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
             orig = 'This is a {@pre /} chunk.';
 
-            parser.once('tag', function (def) {
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should emit a tag event for tags with no attributes but arbitrary whitespace', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
             orig = 'This is a {@pre   /} chunk.';
 
-            parser.once('tag', function (def) {
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should support tags with no attributes or whitespace', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
             orig = 'This is a {@pre/} chunk.';
 
-            parser.once('tag', function (def) {
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should emit a tag event for tags with a quoted attribute', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
             orig = 'This is a {@pre foo="bar"/} chunk.';
 
-            parser.once('tag', function (def) {
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
@@ -273,19 +300,22 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
         it('should emit a tag event for tags with a quoted attribute containing a single quote', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
             orig = "This is a {@pre foo=\"don't\"/} chunk.";
 
-            parser.once('tag', function (def) {
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
@@ -293,20 +323,23 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should emit a tag event for tags with quoted attributes', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
             orig = 'This is a {@pre foo="bar"  baz="bam" /} chunk.';
 
-            parser.once('tag', function (def) {
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
@@ -314,19 +347,23 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
         it('should emit a tag event for tags with quoted attributes using escapes', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
 // Double escape of backslash needed to get the right number into the processing code from the test environs.
             orig = 'This is a {@pre foo="b\\"ar"  baz="bam\\\\" /} chunk.';
-            parser.once('tag', function (def) {
+
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
@@ -335,19 +372,23 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
         it('should emit a tag event for tags with quoted attributes using escapes and handle control chars', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
 // Double escape of backslash needed to get the right number into the processing code from the test environs.
             orig = 'This is a {@pre foo="b\\tar"  baz="b\\bam" /} chunk.';
-            parser.once('tag', function (def) {
+
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
@@ -356,19 +397,22 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
         it('should emit a tag event for tags with a attributes sans quotes', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
             orig = 'This is a {@pre foo=bar baz=bam /} chunk.';
 
-            parser.once('tag', function (def) {
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
@@ -377,20 +421,23 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should support attributes without values', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
             orig = 'This is a {@pre foo baz=bam /} chunk.';
 
-            parser.once('tag', function (def) {
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
@@ -399,20 +446,23 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should support dots (.) in attribute values', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tag;
 
             orig = 'This is a {@pre foo baz=foo.bam gar="whuh.no" /} chunk.';
 
-            parser.once('tag', function (def) {
+            ee = new events.EventEmitter();
+
+            ee.once('tag', function (def) {
                 tag = def;
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.ok(tag);
                 assert.strictEqual(tag.name, 'pre');
                 assert.typeOf(tag.attributes, 'object');
@@ -422,26 +472,29 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should parse multiple tags', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tags, chunks;
 
             orig = 'This is a {@pre foo baz=bam /}{@call me="maybe"/} chunk.';
             tags = [];
             chunks = [];
 
-            parser.on('text', function (chunk) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (chunk) {
                 chunks.push(chunk);
             });
 
-            parser.on('tag', function (def) {
+            ee.on('tag', function (def) {
                 tags.push(def);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(tags.length, 2);
 
                 assert.strictEqual(tags[0].name, 'pre');
@@ -461,26 +514,29 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should parse only self-closing tags', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tags, chunks;
 
             orig = 'This is a {@default}{/default}{@helper } {@pre type="content" key="test"/} {/helper} {@stephen is="cool"} test {/stephen}.';
             tags = [];
             chunks = [];
 
-            parser.on('text', function (chunk) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (chunk) {
                 chunks.push(chunk);
             });
 
-            parser.on('tag', function (def) {
+            ee.on('tag', function (def) {
                 tags.push(def);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 var result = chunks.join('');
 
                 assert.strictEqual(tags.length, 1);
@@ -498,26 +554,29 @@ describe('parser', function () {
             });
 
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should allow tags as attributes', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tags, chunks;
 
             orig = '{>foo name="{@pre type="content" key="test"/}"/}';
             tags = [];
             chunks = [];
 
-            parser.on('text', function (chunk) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (chunk) {
                 chunks.push(chunk);
             });
 
-            parser.on('tag', function (def) {
+            ee.on('tag', function (def) {
                 tags.push(def);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 var result = chunks.join('');
 
                 assert.strictEqual(tags.length, 1);
@@ -535,26 +594,29 @@ describe('parser', function () {
             });
 
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should allow whitespace in quoted attributes', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tags, chunks;
 
             orig = 'This is a {@pre foo baz=bam sep=", " /}{@call me="maybe"/} chunk.';
             tags = [];
             chunks = [];
 
-            parser.on('text', function (chunk) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (chunk) {
                 chunks.push(chunk);
             });
 
-            parser.on('tag', function (def) {
+            ee.on('tag', function (def) {
                 tags.push(def);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(tags.length, 2);
 
                 assert.strictEqual(tags[0].name, 'pre');
@@ -575,79 +637,85 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
         it('should not allow unclosed quoted attributes', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tags, chunks;
 
             orig = 'This is a {@pre bam=" /} chunk. {@pre foo="bar" /}';
             tags = [];
             chunks = [];
 
-            parser.on('text', function (chunk) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (chunk) {
                 chunks.push(chunk);
             });
 
-            parser.on('tag', function (def) {
+            ee.on('tag', function (def) {
                 tags.push(def);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(tags.length, 0);
                 assert.strictEqual('This is a " /}', chunks.join(''));
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
 
-        it('should not allow arbitrary quotes in unquoted attributes', function () {
-            var orig, error;
+        it('should not allow arbitrary quotes in unquoted attributes', function (next) {
+            var parser = findatag.createParseStream(options);
+            var orig;
 
             orig = 'This is a {@pre bam=baz"bam /}{@call me="maybe"/} chunk.';
 
-            try {
-                parser.write(orig).close();
-            } catch (err) {
-                error = err;
-            } finally {
+            parser.on('error', function(error) {
                 assert.isObject(error);
-            }
+                next();
+            });
+
+            parser.end(orig);
         });
 
-        it('should not allow single quoting in attributes', function () {
-            var orig, error;
+        it('should not allow single quoting in attributes', function (next) {
+            var parser = findatag.createParseStream(options);
+            var orig;
 
             orig = "This is a {@pre bam=baz='bam' /} chunk.";
 
-            try {
-                parser.write(orig).close();
-            } catch (err) {
-                error = err;
-            } finally {
+            parser.on('error', function (error) {
                 assert.isObject(error);
-            }
+                next();
+            });
+
+            parser.end(orig);
         });
 
         it('should allow any char in a quoted attribute value', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, tags, chunks;
 
             orig = 'This is a {@pre bam="</li>" /} chunk.';
             tags = [];
             chunks = [];
 
-            parser.on('text', function (chunk) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (chunk) {
                 chunks.push(chunk);
             });
 
-            parser.on('tag', function (def) {
+            ee.on('tag', function (def) {
                 tags.push(def);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(tags.length, 1);
                 assert.strictEqual(tags[0].name, 'pre');
                 assert.typeOf(tags[0].attributes, 'object');
@@ -658,7 +726,7 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
     });
@@ -667,21 +735,24 @@ describe('parser', function () {
     describe('filter', function () {
 
         it('should parse only specified tags', function (next) {
+            var parser = findatag.createParseStream(options);
             var orig, chunks, tags;
 
             orig = 'This is a {@pre baz=bam /} chunk {@howdy/}.';
             chunks = [];
             tags = [];
 
-            parser.on('text', function (chunk) {
+            ee = new events.EventEmitter();
+
+            ee.on('text', function (chunk) {
                 chunks.push(chunk);
             });
 
-            parser.on('tag', function (def) {
+            ee.on('tag', function (def) {
                 tags.push(def);
             });
 
-            parser.once('end', function () {
+            parser.once('finish', function () {
                 assert.strictEqual(chunks.length, 2);
                 assert.strictEqual(chunks[0], 'This is a ');
                 assert.strictEqual(chunks[1], ' chunk {@howdy/}.');
@@ -694,7 +765,7 @@ describe('parser', function () {
                 next();
             });
 
-            parser.write(orig).close();
+            parser.end(orig);
         });
 
     });
