@@ -29,7 +29,6 @@ module.exports = function (grunt) {
         mochaTest: {
             src: ['test/*.js'],
             options: {
-                globals: ['chai'],
                 timeout: 6000,
                 ignoreLeaks: false,
                 ui: 'bdd',
