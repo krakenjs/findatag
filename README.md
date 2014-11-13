@@ -21,7 +21,7 @@ Reads the file at the given file path and parses it, passing entity information 
 ```javascript
 var finder = require('findatag');
 
-finder.process('./file/to/process', handler, function (err, result) {
+finder.parse('./file/to/process', handler, function (err, result) {
     // result is the full processed file
 });
 ```
@@ -84,7 +84,7 @@ var entityHandler = {
     },
 
     onText: function (chunk, cb) {
-        cb(null, chunk.toUpperCase();
+        cb(null, chunk.toUpperCase());
     }
 }
 
