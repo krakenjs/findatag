@@ -664,6 +664,152 @@ describe('parser', function () {
     });
 
 
+    describe('conditional', function () {
+        beforeEach(function() {
+            parser = new Parser({tags: 'if, ?, ^'});
+        });
+
+        it('should parse if statements into object with correct attributes', function (next) {
+            var orig, chunks, tags, expected;
+
+            chunks = [];
+            tags = [];
+
+            expected = {
+                name: 'if',
+                attributes: {
+                    'cond': 'numApples=5',
+                    'if': 'this is executed on true',
+                    'else': 'this is executed on false'
+                }
+            };
+
+            orig = 'This is an if statement {@if cond="numApples=5"}this is executed on true{:else}this is executed on false{/if}';
+
+            parser.on('text', function (chunk) {
+                chunks.push(chunk);
+            });
+
+            parser.on('tag', function (def) {
+                tags.push(def);
+            });
+
+            parser.once('end', function () {
+                assert.strictEqual(chunks.length, 1);
+                assert.strictEqual(chunks[0], 'This is an if statement ');
+
+                assert.strictEqual(tags.length, 1);
+                assert.deepEqual(tags[0], expected);
+                next();
+            });
+
+            parser.write(orig).close();
+
+        });
+
+        it('should parse ? and ^ into correct objects', function (next) {
+            var orig, chunks, tags, expected;
+
+            chunks = [];
+            tags = [];
+
+            expected = [{
+                name: '?',
+                attributes: {
+                    'cond': 'firstVariable',
+                    'if': 'this is executed on true'
+                }
+            },
+            {
+                name: '^',
+                attributes: {
+                    'cond': 'secondVariable',
+                    'if': 'this is also executed on true',
+                    'else': 'and this will be executed on false'
+                }
+            }];
+
+            orig = 'This is the first text chunk {?firstVariable}this is executed on true{/firstVariable}';
+            orig += 'This is the second text chunk{^secondVariable}this is also executed on true';
+            orig += '{:else}and this will be executed on false{/secondVariable}';
+
+            parser.on('text', function (chunk) {
+                chunks.push(chunk);
+            });
+
+            parser.on('tag', function (def) {
+                tags.push(def);
+            });
+
+            parser.once('end', function () {
+                assert.strictEqual(chunks.length, 2);
+                assert.strictEqual(chunks[0], 'This is the first text chunk ');
+                assert.strictEqual(chunks[1], 'This is the second text chunk');
+
+                assert.strictEqual(tags.length, 2);
+                assert.deepEqual(tags[0], expected[0]);
+                assert.deepEqual(tags[1], expected[1]);
+                next();
+            });
+
+            parser.write(orig).close();
+        });
+
+        it('should handle nested tags within conditionals as part of attributes', function (next) {
+            var orig, chunks, tags, expected;
+
+            chunks = [];
+            tags = [];
+
+            expected = [{
+                name: 'if',
+                attributes: {
+                    'cond': 'true',
+                    'if': '{@if cond="false"}execute true result{:else}execute false result{/if}',
+                    'else': '{?variable}{@randomTag}execute the second true statement{/randomTag}{:else}execute the second false statement{/variable}'
+                }
+            },
+            {
+                name: '?',
+                attributes: {
+                    'cond': 'variableName',
+                    'if': '{?secondVariableName}{@pre type="content" key="randomKey" /}execute this when true{:else}execute this when false{/secondVariableName}',
+                    'else': '{?variableName}{@pre type="content" key="randomKey" /}and execute this when true{:else}and this when false{/variableName}'
+                }
+            }];
+
+            orig = '{@if cond="true"}{@if cond="false"}execute true result{:else}execute false result{/if}';
+            orig += '{:else}{?variable}{@randomTag}execute the second true statement{/randomTag}{:else}execute the second false statement{/variable}{/if}';
+            orig += 'Here is some text';
+            orig += '{?variableName}{?secondVariableName}{@pre type="content" key="randomKey" /}execute this when true{:else}execute this when false{/secondVariableName}';
+            orig += '{:else}{?variableName}{@pre type="content" key="randomKey" /}and execute this when true{:else}and this when false{/variableName}{/variableName}';
+            orig += 'Here is some more text';
+
+            parser.on('text', function (chunk) {
+                chunks.push(chunk);
+            });
+
+            parser.on('tag', function (def) {
+                tags.push(def);
+            });
+
+            parser.once('end', function () {
+                assert.strictEqual(chunks.length, 2);
+                assert.strictEqual(chunks[0], 'Here is some text');
+                assert.strictEqual(chunks[1], 'Here is some more text');
+
+                assert.strictEqual(tags.length, 2);
+                assert.deepEqual(tags[0], expected[0]);
+                assert.deepEqual(tags[1], expected[1]);
+                next();
+            });
+
+            parser.write(orig).close();
+
+        });
+    });
+
+
     describe('filter', function () {
 
         it('should parse only specified tags', function (next) {
