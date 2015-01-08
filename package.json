@@ -10,10 +10,6 @@
     "type": "git",
     "url": "git://github.com/krakenjs/findatag.git"
   },
-  "engines": {
-    "node": ">=0.10.4"
-  },
-  "engineStrict": true,
   "keywords": [
     "dust",
     "templating"
