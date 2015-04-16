@@ -4,7 +4,7 @@
   "description": "A specialized tokenizer for finding dust-style tags ({@tagname [attributes]/})",
   "main": "index.js",
   "scripts": {
-    "test": "grunt test"
+    "test": "jshint . && mocha test"
   },
   "repository": {
     "type": "git",
@@ -37,10 +37,8 @@
   },
   "devDependencies": {
     "chai": "~1.5.0",
-    "mocha": "~1.9.0",
-    "grunt": "~0.4.1",
-    "grunt-contrib-jshint": "~0.7.0",
-    "grunt-mocha-test": "~0.7.0"
+    "jshint": "^2.7.0",
+    "mocha": "~1.9.0"
   },
   "homepage": "https://github.com/paypal/findatag"
 }
