@@ -22,6 +22,7 @@
 var fs = require('fs'),
     bl = require('bl'),
     ParseStream = require('./lib/parseStream');
+var once = require('once');
 
 
 module.exports = {
@@ -32,9 +33,8 @@ module.exports = {
 
 
     parse: function (file, entityHandler, callback) {
-        var readStream, parseStream, chunks;
-
-        chunks = [];
+        var readStream, parseStream;
+        callback = once(callback);
 
         // Create file read stream and deal with errors
         readStream = fs.createReadStream(file);
